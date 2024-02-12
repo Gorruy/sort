@@ -1,6 +1,6 @@
 module avalon #(
-  parameter DWIDTH = 10,
-  parameter MAX_PKT_LEN
+  parameter DWIDTH      = 10,
+  parameter MAX_PKT_LEN = 10
 ) (
   input  logic                clk_i,
   input  logic                srst_i,
@@ -17,12 +17,39 @@ module avalon #(
   output logic                src_valid_o,
 
   input  logic                src_ready_i
-)
+);
 
-  localparam CTR_SZ = $clog2(DWIDTH);
+  generate
+    if ( MAX_PKT_LEN < 64 )
+      bubble_sort #( 
+        .DWIDTH               ( DWIDTH              ), 
+        .CTR_SZ               ( CTR_SZ              ), 
+        .MAX_PKT_LEN          ( MAX_PKT_LEN         )
+      ) sort (
+         .clk_i               ( clk_i,              ),
+         .srst_i              ( srst_i,             ),
+         .data_buf            ( data_buf,           ),
+         .counter             ( counter,            ),
+         .snk_startofpacket_i ( snk_startofpacket_i )
+      );
+    else
+      quick_sort #( 
+        .DWIDTH               ( DWIDTH              ), 
+        .CTR_SZ               ( CTR_SZ              ), 
+        .MAX_PKT_LEN          ( MAX_PKT_LEN         )
+      ) sort (
+         .clk_i               ( clk_i,              ),
+         .srst_i              ( srst_i,             ),
+         .data_buf            ( data_buf,           ),
+         .counter             ( counter,            ),
+         .snk_startofpacket_i ( snk_startofpacket_i )
+      );
+  endgenerate
+  
+  localparam CTR_SZ = $clog2(MAX_PKT_LEN);
 
-  logic [DWIDTH - 1:0] data_buf;
-  logic [CTR_SZ - 1:0] counter;
+  logic [MAX_PKT_LEN - 1:0] data_buf;
+  logic [CTR_SZ - 1:0]      counter;
 
   enum logic [2:0] { IDLE_S,
                      RECIEVING_S,
@@ -44,7 +71,7 @@ module avalon #(
         IDLE_S: begin
           if ( snk_startofpacket_i && src_ready_i )
             next_state = RECIEVING_S;
-          else if ( src_ready_o && src_startofpacket_o )
+          else if ( snk_ready_o && src_startofpacket_o )
             next_state = SENDING_S;
         end
 
@@ -59,6 +86,10 @@ module avalon #(
           if ( src_endofpacket_o )
             next_state = IDLE_S;
         end
+
+        default: begin
+          next_state = state_t'('x);
+        end
       endcase
     end
 
@@ -66,7 +97,8 @@ module avalon #(
     begin
       if ( state == IDLE_S )
         counter <= '0;
-      else if ( state == RECIEVING_S )
+      else if ( ( state == SENDING_S && src_ready_i ) ||
+                ( state == RECIEVING_S && snk_ready_o ) )
         counter <= counter + (CTR_SZ)'(1);
     end
 
@@ -93,8 +125,15 @@ module avalon #(
         SENDING_S: begin
           src_valid_o         = 1'b1;
           src_startofpacket_o = counter == (CTR_SZ)'(0) ? 1'b1: 1'b0;
-          src_endofpacket_o   = counter == (CTR_SZ)'(CTR_MAX) ? 1'b1: 1'b0;
+          src_endofpacket_o   = counter == (CTR_SZ)'(MAX_PKT_LEN) ? 1'b1: 1'b0;
           src_data_o          = data_buf[counter];
+        end
+
+        default: begin
+          src_valid_o         = 'x;
+          src_startofpacket_o = 'x;
+          src_endofpacket_o   = 'x;
+          src_data_o          = 'x;
         end
       endcase
     end
