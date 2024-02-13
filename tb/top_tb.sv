@@ -17,7 +17,7 @@ module top_tb;
   logic                src_startofpacket;   
   logic                src_endofpacket;     
   logic                src_valid;           
-  logic                src_read_i; 
+  logic                src_ready_i; 
 
   logic                srst_done;
   bit                  test_succeed;
@@ -90,30 +90,34 @@ module top_tb;
 
       while ( generated_data.num() )
         begin
+          @( posedge clk );
           generated_data.get( gen_data );
 
-          src_data          = gen_data.pop_back();
-          src_valid         = 1'b1;
-          src_startofpacket = 1'b1;
-          src_endofpacket   = 1'b0;
+          snk_data          = gen_data.pop_back();
+          snk_valid         = 1'b1;
+          snk_startofpacket = 1'b1;
+          snk_endofpacket   = 1'b0;
 
           while ( gen_data.size() != 1 )
             begin
               @( posedge clk );
-              while ( !src_read_i )
+              while ( !src_ready_i )
                 begin
                   ##1;
                 end
-              src_data          = gen_data.pop_back();
-              src_valid         = 1'b1;
-              src_startofpacket = 1'b0;
-              src_endofpacket   = 1'b1;
+              snk_data          = gen_data.pop_back();
+              snk_valid         = 1'b1;
+              snk_startofpacket = 1'b0;
             end
 
-          src_data          = gen_data.pop_back();
-          src_valid         = 1'b1;
-          src_startofpacket = 1'b0;
-          src_endofpacket   = 1'b1;
+          ##1;
+          snk_data          = gen_data.pop_back();
+          snk_valid         = 1'b1;
+          snk_endofpacket   = 1'b1;
+          ##1;
+          snk_data          = '0;
+          snk_valid         = 1'b0;
+          snk_endofpacket   = 1'b0;
 
         end
 
@@ -144,6 +148,7 @@ module top_tb;
 
   initial begin
     test_succeed = 1'b1;
+    src_ready_i  = 1'b1;
 
     $display("Simulation started!");
     generate_data( generated_data );

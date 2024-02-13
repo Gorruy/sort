@@ -10,15 +10,15 @@ cModel Technology
 Z0 d/home/gorruy/NTC/sort/tb
 vavalon
 Z1 DXx6 sv_std 3 std 0 22 AD7iAPLo6nTIKk<N0eo=D3
-Z2 !s110 1707537293
+Z2 !s110 1707715398
 !i10b 1
-!s100 :Mzn7d:PF@EMRGafbbIm@3
-I=XVfdmXA6ifAMoSPZ>LW62
+!s100 KPQSc<EJo59NGK_U[@RE02
+I?D]0CYiK2Zn`^cT29CmXF0
 Z3 VDg1SIo80bB@j0V0VzS_@n1
 !s105 avalon_sv_unit
 S1
 R0
-w1707536857
+w1707713914
 8../rtl/avalon.sv
 F../rtl/avalon.sv
 L0 1
@@ -26,23 +26,71 @@ Z4 OV;L;10.5b;63
 r1
 !s85 0
 31
-Z5 !s108 1707537293.000000
+Z5 !s108 1707715398.000000
 !s107 ../rtl/avalon.sv|
 !s90 -reportprogress|300|-sv|../rtl/avalon.sv|
 !i113 1
 o-sv
 Z6 tCvgOpt 0
+vbubble_sort
+R1
+R2
+!i10b 1
+!s100 =C2AC;I`gdK:5T7aY]g=n2
+IEYKWUSOCOF@5zH?PHUPKS1
+R3
+!s105 bubble_sort_sv_unit
+S1
+R0
+w1707715375
+Z7 8../rtl/bubble_sort.sv
+Z8 F../rtl/bubble_sort.sv
+L0 1
+R4
+r1
+!s85 0
+31
+R5
+Z9 !s107 ../rtl/bubble_sort.sv|
+Z10 !s90 -reportprogress|300|-sv|../rtl/bubble_sort.sv|
+!i113 1
+o-sv
+R6
+Xbubble_sort_sv_unit
+R1
+!s110 1707711622
+!i10b 1
+!s100 kS]fR73]`Mm:A7RC:`JKB0
+I[W7nzmfG^bG_m@174nVE:3
+V[W7nzmfG^bG_m@174nVE:3
+!i103 1
+S1
+R0
+w1707711479
+R7
+R8
+L0 44
+R4
+r1
+!s85 0
+31
+!s108 1707711622.000000
+R9
+R10
+!i113 1
+o-sv
+R6
 vtop_tb
 R1
 R2
 !i10b 1
-!s100 m[_QjW1h79Ue^aBRnYQj_0
-ITf^6M[CleBbe@;:bX6;`@3
+!s100 =D=A0bc>b>nRMS2b7^1M;1
+I^2Cnh3kbVMWYWGKL;H;R]2
 R3
 !s105 top_tb_sv_unit
 S1
 R0
-w1707537290
+w1707712643
 8top_tb.sv
 Ftop_tb.sv
 L0 1
