@@ -1,9 +1,11 @@
+`timescale 1 ps / 1 ps
+
 module top_tb;
 
-  parameter NUMBER_OF_TEST_RUNS = 100;
-  parameter TIMEOUT             = 10;
-  parameter MAX_PKT_LEN         = 100;
-  parameter DWIDTH              = 10;
+  parameter NUMBER_OF_TEST_RUNS = 2;
+  parameter MAX_PKT_LEN         = 80;
+  parameter TIMEOUT             = MAX_PKT_LEN**2;
+  parameter DWIDTH              = 256;
 
   bit                  clk;
   logic                srst;
@@ -69,11 +71,11 @@ module top_tb;
     repeat ( NUMBER_OF_TEST_RUNS )
       begin
         data = {};
-        len  = $urandom_range( MAX_PKT_LEN, 1 );
+        len  = $urandom_range( MAX_PKT_LEN, MAX_PKT_LEN );
 
         for ( int i = 0; i < len; i++ )
           begin
-            data.push_back( $urandom_range( 2**DWIDTH - 1, 0 ) );
+            data.push_back( $urandom_range( 20, 0 ) );
           end
 
         generated_data.put(data);
@@ -101,7 +103,7 @@ module top_tb;
           while ( gen_data.size() != 1 )
             begin
               @( posedge clk );
-              while ( !src_ready_i )
+              while ( !snk_ready_o )
                 begin
                   ##1;
                 end
@@ -133,11 +135,15 @@ module top_tb;
         @( posedge clk );
         data = {};
 
-        if ( snk_startofpacket === 1'b1 )
+        if ( src_startofpacket === 1'b1 )
           begin
-            do 
-              data.push_back( snk_data );
-            while ( snk_endofpacket !== 1'b1 );
+            do begin
+              if ( src_valid )
+                begin
+                  data.push_back( snk_data );
+                end
+              @( posedge clk );
+            end while ( src_endofpacket !== 1'b1 );
 
             timeout_counter = 0;
           end
@@ -145,6 +151,37 @@ module top_tb;
           timeout_counter += 1;
       end
   endtask
+
+  task compare_data( mailbox #( data_t) input_data,
+                     mailbox #( data_t) output_data 
+                   );
+
+    data_t i_data;
+    data_t o_data;
+
+    while ( input_data.num() )
+      begin
+        input_data.get( i_data );
+        output_data.get( o_data );
+        
+        if ( i_data.size() != o_data.size() )
+          begin
+            test_succeed = 1'b0;
+            $display( "Transmition failed!" );
+            return;
+          end
+
+        i_data.sort();
+        if ( i_data != o_data )
+          begin
+            test_succeed = 1'b0;
+            $display( "Sorting failed!" );
+            return;
+          end
+      end
+
+  endtask
+
 
   initial begin
     test_succeed = 1'b1;
@@ -156,7 +193,14 @@ module top_tb;
 
     fork
       send_data( generated_data, input_data );
+      read_data( output_data );
     join
+
+    compare_data( input_data, output_data ); 
+
+    if ( test_succeed )
+      $display( "All tests passed!" );
+    $stop();
   end
 
 endmodule 
