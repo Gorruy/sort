@@ -10,7 +10,7 @@ cModel Technology
 Z0 d/home/gorruy/NTC/sort/tb
 va_graycounter
 Z1 DXx6 sv_std 3 std 0 22 AD7iAPLo6nTIKk<N0eo=D3
-Z2 !s110 1707988973
+Z2 !s110 1707990893
 !i10b 1
 !s100 <=[SOBGKM[eW1mH_zNNNE1
 IBQA81jBO8GD<^GI8LQzkn1
@@ -26,7 +26,7 @@ Z8 OV;L;10.5b;63
 r1
 !s85 0
 31
-Z9 !s108 1707988972.000000
+Z9 !s108 1707990892.000000
 Z10 !s107 /home/gorruy/intelFPGA_lite/18.1/quartus/eda/sim_lib/altera_mf.v|
 Z11 !s90 -reportprogress|300|-sv|/home/gorruy/intelFPGA_lite/18.1/quartus/eda/sim_lib/altera_mf.v|
 !i113 1
@@ -274,7 +274,7 @@ o-sv
 R12
 valtaccumulate
 R1
-Z13 !s110 1707988972
+R2
 !i10b 1
 !s100 Od_9hT<[La_kaEJ2KiJ>z0
 ITZWeYJM7UL@Fk20SbcAWY3
@@ -418,7 +418,7 @@ o-sv
 R12
 vALTERA_DEVICE_FAMILIES
 R1
-R13
+Z13 !s110 1707990892
 !i10b 1
 !s100 5PRRmIcgDfdLFGXa3^ezC0
 Ij]hc00Yz6LD@e18g^]]og1
@@ -541,7 +541,7 @@ o-sv
 R12
 valtera_syncram_derived
 R1
-R13
+R2
 !i10b 1
 !s100 Wgd@X<R[T96b:DJ^@OoUS0
 I58i@`C00cI]4dfE?aE8U60
@@ -565,7 +565,7 @@ o-sv
 R12
 valtera_syncram_derived_forwarding_logic
 R1
-R13
+R2
 !i10b 1
 !s100 YV6TnBRmd:mz=z`IAHW1h3
 IJ[8hfoM7lYXPC1J=A3AWI0
@@ -661,7 +661,7 @@ o-sv
 R12
 valtmult_accum
 R1
-R13
+R2
 !i10b 1
 !s100 :9i]R_J0od4n[]>54^Bj;1
 Ij?HFMoO72g`eH9D1P@d6@0
@@ -685,7 +685,7 @@ o-sv
 R12
 valtmult_add
 R1
-R13
+R2
 !i10b 1
 !s100 ;>S`_HiZHQY=IT8>ccgU02
 I6no^L<EOm5C0D6]EVGzhj3
@@ -1037,7 +1037,7 @@ R8
 r1
 !s85 0
 31
-!s108 1707988971.000000
+R9
 !s107 ../rtl/avalon.sv|
 !s90 -reportprogress|300|-sv|../rtl/avalon.sv|
 !i113 1
@@ -1047,13 +1047,13 @@ vbubble_sort
 R1
 R13
 !i10b 1
-!s100 [UedAe6M4658mRKU4H0Yc3
-IKhKKEKmSjH422SZN2d?KO2
+!s100 KA`QB25Qof[HS9kF=KX8S2
+IDKOeYSHM??:1CPhGa^RUS0
 R3
 !s105 bubble_sort_sv_unit
 S1
 R0
-w1707988821
+w1707990889
 Z14 8../rtl/bubble_sort.sv
 Z15 F../rtl/bubble_sort.sv
 L0 1
@@ -1189,7 +1189,7 @@ o-sv
 R12
 vdcfifo
 R1
-R13
+R2
 !i10b 1
 !s100 hn0fii?>0hj2F_TXcPY6=2
 Ia7l6jDinLlQUb@E;1D[H10
@@ -1285,7 +1285,7 @@ o-sv
 R12
 vdcfifo_low_latency
 R1
-R13
+R2
 !i10b 1
 !s100 QK4=300Q^=K72]hD@Z5=N2
 I?OKNRC89L_M8lmLBUm:[E2
@@ -1309,7 +1309,7 @@ o-sv
 R12
 vdcfifo_mixed_widths
 R1
-R13
+R2
 !i10b 1
 !s100 aLm]eP29K0]K9VOd@6J203
 Ih6CTgE1<lm3=Uzh@]zCX[2
@@ -2232,13 +2232,13 @@ vtop_tb
 R1
 R2
 !i10b 1
-!s100 R<=OHYcDCWUm7JGzjd9i[0
-IT[lT7z=VlP1I>88VfAe461
+!s100 =oKQ?]Q5b93ZK[9DHNNJG1
+IaJjGIKXHdYA02D:B;j^VX0
 R3
 !s105 top_tb_sv_unit
 S1
 R0
-w1707988174
+w1707990043
 8top_tb.sv
 Ftop_tb.sv
 L0 3
@@ -2246,7 +2246,7 @@ R8
 r1
 !s85 0
 31
-!s108 1707988973.000000
+!s108 1707990893.000000
 !s107 top_tb.sv|
 !s90 -reportprogress|300|-sv|top_tb.sv|
 !i113 1

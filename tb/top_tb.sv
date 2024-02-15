@@ -172,7 +172,7 @@ module top_tb;
           end
 
         i_data.sort();
-        if ( i_data != o_data )
+        if ( i_data !== o_data )
           begin
             test_succeed = 1'b0;
             $display( "Sorting failed!" );

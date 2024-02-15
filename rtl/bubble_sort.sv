@@ -24,13 +24,13 @@ module bubble_sort #(
   logic [ADDR_SZ - 1:0] max_addr;
   logic [ADDR_SZ - 1:0] iteration_counter;
 
-  assign done_o = in_process ? iteration_counter == max_addr : 1'b0;
+  assign done_o = in_process ? iteration_counter == max_addr - 1: 1'b0;
   assign data_a = q_a < q_b ? q_a : q_b;
   assign data_b = q_a < q_b ? q_b : q_a;
 
   always_ff @( posedge clk_i )
     begin
-      if ( sorting_i && !done_o )
+      if ( sorting_i )
         in_process <= 1'b1;
       else
         in_process <= 1'b0;
@@ -60,7 +60,9 @@ module bubble_sort #(
   // address buses hold same values for 2 clk cycles: reading on first and writing on second
   always_ff @( posedge clk_i )
     begin
-      if ( !in_process )
+      if ( done_o )
+        counter <= '0;
+      else if ( !in_process )
         counter <= { 1'b1, 1'b0 };
       else
         { counter[0], counter[1] } <= { counter[1], counter[0] };
@@ -71,7 +73,7 @@ module bubble_sort #(
       if ( !in_process )
         address_a <= '0;
       else if ( address_a == max_addr - iteration_counter - (ADDR_SZ)'(1) && counter[0] )
-        address_a <= '0 + iteration_counter;
+        address_a <= '0;
       else if ( counter[0] )
         address_a <= address_a + (ADDR_SZ)'(1);
     end
@@ -80,7 +82,7 @@ module bubble_sort #(
     begin
       if ( !in_process )
         iteration_counter <= '0;
-      else if ( address_a == max_addr - iteration_counter - (ADDR_SZ)'(1) )
+      else if ( address_a == max_addr - iteration_counter - (ADDR_SZ)'(1) && counter[0] )
         iteration_counter <= iteration_counter + (ADDR_SZ)'(1);
     end
 
@@ -89,7 +91,7 @@ module bubble_sort #(
       if ( !in_process )
         address_b <= (ADDR_SZ)'(1);
       else if ( address_b == max_addr - iteration_counter && counter[0] )
-        address_b <= '0 + (ADDR_SZ)'(1) + iteration_counter;
+        address_b <= (ADDR_SZ)'(1);
       else if ( counter[0] )
         address_b <= address_b + (ADDR_SZ)'(1);
     end
