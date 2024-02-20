@@ -25,8 +25,17 @@ module bubble_sort #(
   logic [ADDR_SZ - 1:0] iteration_counter;
 
   assign done_o = in_process ? iteration_counter == max_addr - 1: 1'b0;
-  assign data_a = q_a < q_b ? q_a : q_b;
-  assign data_b = q_a < q_b ? q_b : q_a;
+
+  always_comb
+    begin
+      data_a = '0;
+      data_b = '0;
+      if ( in_process )
+        begin
+          data_a = q_a < q_b ? q_a : q_b;
+          data_b = q_a < q_b ? q_b : q_a;
+        end
+    end
 
   always_ff @( posedge clk_i )
     begin
@@ -40,7 +49,7 @@ module bubble_sort #(
   always_ff @( posedge clk_i )
     begin
       if ( sorting_i && !in_process )
-        max_addr <= max_counter_i != '0 ? max_counter_i - 1 : '1;
+        max_addr <= max_counter_i != '0 ? max_counter_i - (ADDR_SZ)'(1) : '1;
     end
   
   always_ff @( posedge clk_i )

@@ -2,10 +2,10 @@
 
 module top_tb;
 
-  parameter NUMBER_OF_TEST_RUNS = 2;
+  parameter NUMBER_OF_TEST_RUNS = 1;
   parameter MAX_PKT_LEN         = 80;
-  parameter TIMEOUT             = MAX_PKT_LEN**2;
-  parameter DWIDTH              = 256;
+  parameter TIMEOUT             = MAX_PKT_LEN**2 + 1;
+  parameter DWIDTH              = 32;
 
   bit                  clk;
   logic                srst;
@@ -79,8 +79,21 @@ module top_tb;
           end
 
         generated_data.put(data);
-
       end
+    
+      data = {};
+      len  = 1;
+      data.push_back( $urandom_range( 20, 0 ) );
+      generated_data.put(data);
+      
+      data = {};
+      len  = MAX_PKT_LEN;
+      for ( int i = 0; i < len; i++ )
+        begin
+          data.push_back( $urandom_range( 20, 0 ) );
+        end
+
+      generated_data.put(data);
 
   endtask
 
@@ -100,6 +113,8 @@ module top_tb;
           snk_startofpacket = 1'b1;
           snk_endofpacket   = 1'b0;
 
+          exposed_data.push_back(snk_data);
+
           while ( gen_data.size() != 1 )
             begin
               @( posedge clk );
@@ -110,6 +125,8 @@ module top_tb;
               snk_data          = gen_data.pop_back();
               snk_valid         = 1'b1;
               snk_startofpacket = 1'b0;
+
+              exposed_data.push_back(snk_data);
             end
 
           ##1;
@@ -117,10 +134,11 @@ module top_tb;
           snk_valid         = 1'b1;
           snk_endofpacket   = 1'b1;
           ##1;
-          snk_data          = '0;
           snk_valid         = 1'b0;
           snk_endofpacket   = 1'b0;
 
+          exposed_data.push_back(snk_data);
+          input_data.put(exposed_data);
         end
 
   endtask
@@ -132,19 +150,26 @@ module top_tb;
 
     while ( timeout_counter != TIMEOUT + 1)
       begin
-        @( posedge clk );
         data = {};
+        @( posedge clk );
 
         if ( src_startofpacket === 1'b1 )
           begin
             do begin
+              src_ready_i = $urandom_range(10, 0);
+              src_ready_i = 1'b0;
+              ##(src_ready_i);
+              src_ready_i = 1'b1;
+
               if ( src_valid )
                 begin
                   data.push_back( snk_data );
                 end
               @( posedge clk );
             end while ( src_endofpacket !== 1'b1 );
-
+            
+            data.push_back(snk_data);
+            output_data.put(data);
             timeout_counter = 0;
           end
         else 
@@ -158,16 +183,15 @@ module top_tb;
 
     data_t i_data;
     data_t o_data;
-
     while ( input_data.num() )
       begin
         input_data.get( i_data );
         output_data.get( o_data );
-        
+
         if ( i_data.size() != o_data.size() )
           begin
             test_succeed = 1'b0;
-            $display( "Transmition failed!" );
+            $display( "Transmition failed! read size:%d, write size:%d", o_data.size(), i_data.size() );
             return;
           end
 
