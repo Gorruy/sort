@@ -1,7 +1,6 @@
 module sorting #(
   parameter DWIDTH      = 8,
-  parameter MAX_PKT_LEN = 256,
-  parameter RAM_N       = 5
+  parameter MAX_PKT_LEN = 256
 ) (
   input  logic                clk_i,
   input  logic                srst_i,
@@ -20,92 +19,72 @@ module sorting #(
   input  logic                src_ready_i
 );
 
-  localparam ADDR_SZ     = $clog2(MAX_PKT_LEN * DWIDTH / RAM_N);
-  localparam RAM_COUNTER = $clog2(RAM_N);
+  localparam ADDR_SZ = $clog2(MAX_PKT_LEN);
 
   // Avalon internal signals
-  logic [RAM_COUNTER - 1:0]          current_ram;
-  logic [ADDR_SZ - 1:0]              counter_inside_ram_block;
-  logic [RAM_N - 1:0][ADDR_SZ - 1:0] fullness;
-  logic                              sorting;
+  logic [ADDR_SZ - 1:0] counter_inside_ram_block;
+  logic                 sorting;
+  logic [ADDR_SZ - 1:0] send_addr_a;
 
   // RAM signals
-  logic [RAM_N - 1:0][ADDR_SZ - 1:0] addr_a;
-  logic [RAM_N - 1:0][ADDR_SZ - 1:0] addr_b;
-  logic [RAM_N - 1:0][DWIDTH - 1:0]  data_a;
-  logic [RAM_N - 1:0][DWIDTH - 1:0]  data_b;
-  logic [RAM_N - 1:0][DWIDTH - 1:0]  q_a;
-  logic [RAM_N - 1:0][DWIDTH - 1:0]  q_b;
-  logic [RAM_N - 1:0]                wren_a;
-  logic [RAM_N - 1:0]                wren_b;
+  logic [ADDR_SZ - 1:0] addr_a;
+  logic [ADDR_SZ - 1:0] addr_b;
+  logic [DWIDTH - 1:0]  data_a;
+  logic [DWIDTH - 1:0]  data_b;
+  logic [DWIDTH - 1:0]  q_a;
+  logic [DWIDTH - 1:0]  q_b;
+  logic                 wren_a;
+  logic                 wren_b;
 
   // Sorting block signals
-  logic [RAM_N - 1:0][ADDR_SZ - 1:0] sort_addr_a;
-  logic [RAM_N - 1:0][ADDR_SZ - 1:0] sort_addr_b;
-  logic [RAM_N - 1:0][DWIDTH - 1:0]  sort_data_a;
-  logic [RAM_N - 1:0][DWIDTH - 1:0]  sort_data_b;
-  logic [RAM_N - 1:0]                sort_wren_a;
-  logic [RAM_N - 1:0]                sort_wren_b;
-  logic [RAM_N - 1:0][DWIDTH - 1:0]  sort_q_a;
-  logic [RAM_N - 1:0][DWIDTH - 1:0]  sort_q_b;  
-  logic [RAM_N - 1:0]                done;
+  logic [ADDR_SZ - 1:0] sort_addr_a;
+  logic [ADDR_SZ - 1:0] sort_addr_b;
+  logic [DWIDTH - 1:0]  sort_data_a;
+  logic [DWIDTH - 1:0]  sort_data_b;
+  logic                 sort_wren_a;
+  logic                 sort_wren_b;
+  logic [DWIDTH - 1:0]  sort_q_a;
+  logic [DWIDTH - 1:0]  sort_q_b;  
+  logic                 done;
 
-  // Sending signals 
-  logic [RAM_N - 1:0][ADDR_SZ - 1:0] send_addr_a;
-  logic [RAM_N - 1:0][ADDR_SZ - 1:0] send_addr_b;
-  logic [RAM_COUNTER - 1:0]          smallest_index;
-  logic [RAM_N - 1:0]                available_ram;
-  logic [DWIDTH - 1:0]               smallest_value;
+  dual_port_ram #(
+    .DWIDTH    ( DWIDTH  ),
+    .AWIDTH    ( ADDR_SZ )
+  ) ram_inst0 (
+    .address_a ( addr_a  ),
+    .address_b ( addr_b  ),
+    .clock     ( clk_i   ),
+    .data_a    ( data_a  ),
+    .data_b    ( data_b  ),
+    .wren_a    ( wren_a  ),
+    .wren_b    ( wren_b  ),
+    .q_a       ( q_a     ),
+    .q_b       ( q_b     )
+  );  
 
-  genvar i;
-  generate
-    for ( i = 0; i < RAM_N; i++ )
-      begin : rams
-        dual_port_ram #(
-          .DWIDTH    ( DWIDTH     ),
-          .AWIDTH    ( ADDR_SZ    )
-        ) ram_inst0 (
-          .address_a ( addr_a [i] ),
-          .address_b ( addr_b [i] ),
-          .clock     ( clk_i      ),
-          .data_a    ( data_a [i] ),
-          .data_b    ( data_b [i] ),
-          .wren_a    ( wren_a [i] ),
-          .wren_b    ( wren_b [i] ),
-          .q_a       ( q_a    [i] ),
-          .q_b       ( q_b    [i] )
-        );
-      end    
-  endgenerate
-
-  generate
-    for ( i = 0; i < RAM_N; i++ )
-      begin : sorts
-        bubble_sort #( 
-          .DWIDTH        ( DWIDTH                       ), 
-          .ADDR_SZ       ( ADDR_SZ                      )
-        ) sort_inst0 (
-          .address_a     ( sort_addr_a [i] ),
-          .address_b     ( sort_addr_b [i] ),
-          .clk_i         ( clk_i           ),
-          .data_a        ( sort_data_a [i] ),
-          .data_b        ( sort_data_b [i] ),
-          .wren_a        ( sort_wren_a [i] ),
-          .wren_b        ( sort_wren_b [i] ),
-          .q_a           ( sort_q_a    [i] ),
-          .q_b           ( sort_q_b    [i] ),
-          .done_o        ( done        [i] ),
-          .max_counter_i ( fullness    [i] ),
-          .sorting_i     ( sorting         )
-        );
-      end
-  endgenerate
+  bubble_sort #( 
+    .DWIDTH        ( DWIDTH      ), 
+    .ADDR_SZ       ( ADDR_SZ     )
+  ) sort_inst0 (
+    .address_a     ( sort_addr_a ),
+    .address_b     ( sort_addr_b ),
+    .clk_i         ( clk_i       ),
+    .data_a        ( sort_data_a ),
+    .data_b        ( sort_data_b ),
+    .wren_a        ( sort_wren_a ),
+    .wren_b        ( sort_wren_b ),
+    .q_a           ( sort_q_a    ),
+    .q_b           ( sort_q_b    ),
+    .done_o        ( done        ),
+    .max_counter_i ( fullness    ),
+    .sorting_i     ( sorting     )
+  );
 
   typedef enum logic [1:0] { IDLE_S,
                              RECIEVING_S,
                              SORTING_S,
                              SENDING_S } state_t;
-state_t state, next_state /* synthesis syn_encoding="user" */;
+  state_t state, next_state;
 
   always_ff @( posedge clk_i )
     begin
@@ -133,7 +112,7 @@ state_t state, next_state /* synthesis syn_encoding="user" */;
         end
 
         SORTING_S: begin
-          if ( done[0] )
+          if ( done )
             next_state = SENDING_S;
         end
 
@@ -170,29 +149,29 @@ state_t state, next_state /* synthesis syn_encoding="user" */;
         end
 
         RECIEVING_S: begin
-          addr_a[current_ram] = counter_inside_ram_block;
-          data_a[current_ram] = snk_data_i;
-          wren_a[current_ram] = snk_valid_i;
-          snk_ready_o         = 1'b1;
+          addr_a      = counter_inside_ram_block;
+          data_a      = snk_data_i;
+          wren_a      = snk_valid_i;
+          snk_ready_o = 1'b1;
         end
 
         SORTING_S: begin
-          addr_a              = sort_addr_a;
-          addr_b              = sort_addr_b;
-          data_a              = sort_data_a;
-          data_b              = sort_data_b;
-          wren_a              = sort_wren_a;
-          wren_b              = sort_wren_b;
-          sort_q_a            = q_a;
-          sort_q_b            = q_a;
+          addr_a   = sort_addr_a;
+          addr_b   = sort_addr_b;
+          data_a   = sort_data_a;
+          data_b   = sort_data_b;
+          wren_a   = sort_wren_a;
+          wren_b   = sort_wren_b;
+          sort_q_a = q_a;
+          sort_q_b = q_a;
         end
 
         SENDING_S: begin
           addr_a              = send_addr_a;
           src_valid_o         = 1'b1;
-          src_data_o          = smallest_value;
+          src_data_o          = q_a;
           src_startofpacket_o = send_addr_a == '0;
-          src_endofpacket_o   = fullness == '0;
+          src_endofpacket_o   = send_addr_a == counter_inside_ram_block;
         end
 
         default: begin
@@ -215,29 +194,18 @@ state_t state, next_state /* synthesis syn_encoding="user" */;
 
   always_ff @( posedge clk_i )
     begin
-      if ( state == IDLE_S )
-        current_ram <= '0;
-      else if ( counter_inside_ram_block == '1 )
-        current_ram <= current_ram + (RAM_COUNTER)'(1);
-    end
-
-  always_ff @( posedge clk_i )
-    begin
-      if ( state != RECIEVING_S )
-        counter_inside_ram_block <= '0;
+      if ( state != SENDING_S )
+        send_addr_a <= '0;
       else
-        counter_inside_ram_block <= counter_inside_ram_block + (ADDR_SZ)'(1);
+        send_addr_a <= send_addr_a + (ADDR_SZ)'(1);
     end
 
   always_ff @( posedge clk_i )
     begin
-      if ( state == RECIEVING_S )
-        begin
-          if ( snk_endofpacket_i )
-            fullness[current_ram] <= counter_inside_ram_block;
-          else
-            fullness[current_ram] <= '1;
-        end
+      if ( state == IDLE_S || send_addr_a == counter_inside_ram_block )
+        counter_inside_ram_block <= '0;
+      else if ( state == RECIEVING_S && snk_valid_i )
+        counter_inside_ram_block <= counter_inside_ram_block + (ADDR_SZ)'(1);
     end
   
   always_ff @( posedge clk_i )
@@ -246,41 +214,6 @@ state_t state, next_state /* synthesis syn_encoding="user" */;
         sorting <= 1'b1;
       else
         sorting <= 1'b0;
-    end
-
-
-  always_ff @( posedge clk_i )
-    begin
-      if ( state == IDLE_S )
-        send_addr_a <= '0;
-      else
-        send_addr_a[smallest_index] <= send_addr_a[smallest_index] + (ADDR_SZ)'(1);
-    end
-
-  always_ff @( posedge clk_i )
-    begin
-      for ( int i = 0; i < RAM_N; i++ )
-        begin
-          if ( send_addr_a[i] == fullness[i] )
-            available_ram[i] <= 1'b0;
-          else
-            available_ram[i] <= 1'b1;
-        end
-    end
-
-  always_comb
-    begin
-      smallest_value = '1;
-      smallest_index = '0;
-      
-      for ( int i = 0; i < RAM_N; i++ )
-        begin
-          if ( q_a[i] <= smallest_value && available_ram[i] )
-            begin
-              smallest_value = q_a[i];
-              smallest_index = (RAM_COUNTER)'(i);
-            end
-        end
     end
 
 endmodule
