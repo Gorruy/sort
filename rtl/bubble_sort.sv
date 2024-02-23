@@ -1,6 +1,6 @@
 module bubble_sort #(
-  parameter DWIDTH      = 10,
-  parameter ADDR_SZ     = 10
+  parameter DWIDTH  = 10,
+  parameter ADDR_SZ = 10
 ) (
   input  logic                 clk_i,
 
@@ -67,7 +67,7 @@ module bubble_sort #(
   assign wren_a = counter == '1 && !sorting_i ? 1'b1 : 1'b0;
   assign wren_b = counter == '1 && !sorting_i ? 1'b1 : 1'b0;
 
-  // address buses hold same values for 2 clk cycles: reading on first and writing on second
+  // address buses hold same values for 4 clk cycles: reading on first three and writing on last
   always_ff @( posedge clk_i )
     begin
       if ( sorting_i || counter == '1 )
