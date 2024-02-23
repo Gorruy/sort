@@ -3,9 +3,10 @@
 module top_tb;
 
   parameter NUMBER_OF_TEST_RUNS = 1;
-  parameter MAX_PKT_LEN         = 64;
+  parameter MAX_PKT_LEN         = 8;
   parameter TIMEOUT             = MAX_PKT_LEN**2 * 4 + 1;
   parameter DWIDTH              = 32;
+  parameter NUMBER_OF_TESTS     = 2;
 
   bit                  clk;
   logic                srst;
@@ -59,9 +60,9 @@ module top_tb;
 
   typedef logic [DWIDTH - 1:0] data_t[$];
 
-  mailbox #( data_t ) generated_data = new();
-  mailbox #( data_t ) input_data     = new();
-  mailbox #( data_t ) output_data    = new();
+  mailbox #( data_t ) generated_data[NUMBER_OF_TESTS - 1:0];
+  mailbox #( data_t ) input_data  = new();
+  mailbox #( data_t ) output_data = new();
 
   task generate_data( mailbox #( data_t ) generated_data );
 
@@ -173,6 +174,8 @@ module top_tb;
     int    timeout_counter;
     int    src_ready_delay;
 
+    timeout_counter = 0;
+
     while ( timeout_counter != TIMEOUT + 1)
       begin
         data = {};
@@ -271,12 +274,26 @@ module top_tb;
     src_ready_i  = 1'b0;
 
     $display("Simulation started!");
-    generate_data( generated_data );
+
+    foreach ( generated_data[i] )
+      begin
+        generated_data[i] = new();
+
+        generate_data( generated_data[i] );
+      end
+
     wait( srst_done === 1'b1 );
 
     fork
-      send_data( generated_data, input_data );
+      send_data( generated_data[0], input_data );
       read_data( output_data, 0 );
+    join
+
+    compare_data( input_data, output_data ); 
+
+    fork
+      send_data( generated_data[1], input_data );
+      read_data( output_data, 1 );
     join
 
     compare_data( input_data, output_data ); 
