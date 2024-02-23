@@ -19,30 +19,39 @@ module bubble_sort #(
   input  logic [ADDR_SZ - 1:0] max_counter_i
 );
 
-  logic                 counter;
+  logic [1:0]           counter;
   logic [ADDR_SZ - 1:0] max_addr;
   logic [ADDR_SZ - 1:0] outer_counter;
-  logic [ADDR_SZ - 1:0] iteration_counter;
-  logic [DWIDTH - 1:0]  less_data;
-  logic [DWIDTH - 1:0]  more_data;
+  logic [DWIDTH:0]      compare;
+  logic [DWIDTH - 1:0]  data_buf_a;
+  logic [DWIDTH - 1:0]  data_buf_b;
 
   always_ff @( posedge clk_i )
     begin
-      if ( max_addr == (ADDR_SZ)'(1) )
+      data_buf_a <= q_a;
+      data_buf_b <= q_b;
+    end
+
+  always_ff @( posedge clk_i )
+    compare <= (DWIDTH + 1)'(data_buf_a) - (DWIDTH + 1)'(data_buf_b);
+
+  always_ff @( posedge clk_i )
+    begin
+      if ( max_addr == '0 && counter == '1 )
         done_o <= 1'b1;
       else
         done_o <= 1'b0;
     end
 
-  always_comb 
+  always_comb
     begin
-      data_a = q_a;
-      data_b = q_b;
+      data_a = q_b;
+      data_b = q_a;
 
-      if ( q_a > q_b )
+      if ( compare[DWIDTH] )
         begin
-          data_a = q_b;
-          data_b = q_a;
+          data_a = q_a;
+          data_b = q_b;
         end
     end
 
@@ -50,14 +59,14 @@ module bubble_sort #(
   always_ff @( posedge clk_i )
     begin
       if ( sorting_i )
-        max_addr <= max_counter_i;
-      else if ( counter == max_addr )
+        max_addr <= max_counter_i - (ADDR_SZ)'(2);
+      else if ( outer_counter == max_addr && counter == '1 )
         max_addr <= max_addr - (ADDR_SZ)'(1);
     end
   
   always_ff @( posedge clk_i )
     begin
-      if ( !counter )
+      if ( counter == (ADDR_SZ)'(2) )
         begin
           wren_b <= 1'b1;
           wren_a <= 1'b1;
@@ -72,17 +81,17 @@ module bubble_sort #(
   // address buses hold same values for 2 clk cycles: reading on first and writing on second
   always_ff @( posedge clk_i )
     begin
-      if ( sorting_i )
-        counter <= 1'b1;
+      if ( sorting_i || counter == '1 )
+        counter <= 1'b0;
       else
         counter <= counter + 1'b1;
     end
   
   always_ff @( posedge clk_i )
     begin
-      if ( sorting_i || outer_counter == max_addr )
+      if ( sorting_i || outer_counter == max_addr && counter == '1 )
         outer_counter <= '0;
-      else if ( counter )
+      else if ( counter == '1 )
         outer_counter <= outer_counter + (ADDR_SZ)'(1);
     end
 

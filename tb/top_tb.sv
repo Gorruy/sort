@@ -3,8 +3,8 @@
 module top_tb;
 
   parameter NUMBER_OF_TEST_RUNS = 1;
-  parameter MAX_PKT_LEN         = 80;
-  parameter TIMEOUT             = MAX_PKT_LEN**2 + 1;
+  parameter MAX_PKT_LEN         = 25;
+  parameter TIMEOUT             = MAX_PKT_LEN**2 * 4 + 1;
   parameter DWIDTH              = 32;
 
   bit                  clk;
@@ -39,7 +39,7 @@ module top_tb;
       srst_done <= 1'b1;
     end      
 
- avalon #(
+ sorting #(
     .DWIDTH              ( DWIDTH              ),
     .MAX_PKT_LEN         ( MAX_PKT_LEN         )
   ) DUT (
@@ -71,11 +71,11 @@ module top_tb;
     repeat ( NUMBER_OF_TEST_RUNS )
       begin
         data = {};
-        len  = $urandom_range( MAX_PKT_LEN, MAX_PKT_LEN );
+        len  = $urandom_range( MAX_PKT_LEN, 1 );
 
         for ( int i = 0; i < len; i++ )
           begin
-            data.push_back( $urandom_range( 20, 0 ) );
+            data.push_back( $urandom_range( 2**DWIDTH - 1, 0 ) );
           end
 
         generated_data.put(data);
@@ -95,6 +95,15 @@ module top_tb;
 
       generated_data.put(data);
 
+      data = {};
+      len  = MAX_PKT_LEN;
+      for ( int i = 0; i < len; i++ )
+        begin
+          data.push_back( $urandom_range( 2**DWIDTH - 1, 2**DWIDTH - 1 ) );
+        end
+
+      generated_data.put(data);
+
   endtask
 
   task send_data( mailbox #( data_t ) generated_data,
@@ -105,31 +114,44 @@ module top_tb;
 
       while ( generated_data.num() )
         begin
-          @( posedge clk );
+          ##1;
+          if ( snk_ready_o !== 1'b1 )
+            begin
+              continue;
+            end
+
           generated_data.get( gen_data );
 
           snk_data          = gen_data.pop_back();
           snk_valid         = 1'b1;
           snk_startofpacket = 1'b1;
-          snk_endofpacket   = 1'b0;
+          snk_endofpacket   = gen_data.size() != 0 ? 1'b0 : 1'b1;
 
           exposed_data.push_back(snk_data);
+          ##2;
+          snk_startofpacket = 1'b0;
 
-          while ( gen_data.size() != 1 )
+          while ( gen_data.size() > 1 )
             begin
-              @( posedge clk );
               while ( !snk_ready_o )
                 begin
                   ##1;
                 end
               snk_data          = gen_data.pop_back();
               snk_valid         = 1'b1;
-              snk_startofpacket = 1'b0;
 
               exposed_data.push_back(snk_data);
+              ##1;
             end
 
-          ##1;
+          if ( gen_data.size() == 0 )
+            begin
+              input_data.put(exposed_data);
+              snk_valid         = 1'b0;
+              snk_endofpacket   = 1'b0;
+              continue;
+            end
+
           snk_data          = gen_data.pop_back();
           snk_valid         = 1'b1;
           snk_endofpacket   = 1'b1;
@@ -143,38 +165,57 @@ module top_tb;
 
   endtask
 
-  task read_data( mailbox #( data_t) output_data );
+  task read_data( mailbox #( data_t) output_data,
+                  input int          with_ready_delay );
     
     data_t data;
     int    timeout_counter;
+    int    src_ready_delay;
 
     while ( timeout_counter != TIMEOUT + 1)
       begin
         data = {};
-        @( posedge clk );
+        ##1;
 
-        if ( src_startofpacket === 1'b1 )
+        if ( src_startofpacket === 1'b1 && src_endofpacket !== 1'b1 )
           begin
             do begin
-              src_ready_i = $urandom_range(10, 0);
-              src_ready_i = 1'b0;
-              ##(src_ready_i);
-              src_ready_i = 1'b1;
+              if ( with_ready_delay )
+                begin
+                  src_ready_delay = $urandom_range(10, 0);
+                  src_ready_i = 1'b0;
+                  ##(src_ready_delay);
+                  src_ready_i = 1'b1;
+                end
+              else 
+                src_ready_i = 1'b1;
 
               if ( src_valid )
                 begin
-                  data.push_back( snk_data );
+                  data.push_back(src_data);
                 end
-              @( posedge clk );
+              ##1;
             end while ( src_endofpacket !== 1'b1 );
             
-            data.push_back(snk_data);
+            data.push_back(src_data);
             output_data.put(data);
+            src_ready_i = 1'b0;
             timeout_counter = 0;
+          end
+        else if ( src_startofpacket === 1'b1 && src_endofpacket === 1'b1 )
+          begin
+            data = {};
+            timeout_counter = 0;
+            if ( src_valid )
+              begin
+                data.push_back(src_data);
+                output_data.put(data);
+              end
           end
         else 
           timeout_counter += 1;
       end
+
   endtask
 
   task compare_data( mailbox #( data_t) input_data,
@@ -199,7 +240,7 @@ module top_tb;
         if ( i_data !== o_data )
           begin
             test_succeed = 1'b0;
-            $display( "Sorting failed!" );
+            $display( "Sorting failed! input:%p, output:%p", i_data, o_data );
             return;
           end
       end
@@ -209,7 +250,7 @@ module top_tb;
 
   initial begin
     test_succeed = 1'b1;
-    src_ready_i  = 1'b1;
+    src_ready_i  = 1'b0;
 
     $display("Simulation started!");
     generate_data( generated_data );
@@ -217,7 +258,7 @@ module top_tb;
 
     fork
       send_data( generated_data, input_data );
-      read_data( output_data );
+      read_data( output_data, 1 );
     join
 
     compare_data( input_data, output_data ); 

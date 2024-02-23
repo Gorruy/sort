@@ -40,7 +40,7 @@ module sorting_top (
     end 
 
   sorting #(
-    .DWIDTH              ( 8                 ),
+    .DWIDTH              ( 64                ),
     .MAX_PKT_LEN         ( 256               )
   ) sorting (
     .clk_i               ( clk_i             ),

@@ -25,6 +25,11 @@ module sorting #(
   logic [ADDR_SZ - 1:0] counter_inside_ram_block;
   logic                 sorting;
   logic [ADDR_SZ - 1:0] send_addr_a;
+  logic [ADDR_SZ - 1:0] send_addr_b;
+  logic [1:0]           counter;
+  logic [DWIDTH - 1:0]  data_to_send;
+  logic                 end_of_sending;
+  logic                 start_of_sending;
 
   // RAM signals
   logic [ADDR_SZ - 1:0] addr_a;
@@ -63,21 +68,21 @@ module sorting #(
   );  
 
   bubble_sort #( 
-    .DWIDTH        ( DWIDTH      ), 
-    .ADDR_SZ       ( ADDR_SZ     )
+    .DWIDTH        ( DWIDTH                   ), 
+    .ADDR_SZ       ( ADDR_SZ                  )
   ) sort_inst0 (
-    .address_a     ( sort_addr_a ),
-    .address_b     ( sort_addr_b ),
-    .clk_i         ( clk_i       ),
-    .data_a        ( sort_data_a ),
-    .data_b        ( sort_data_b ),
-    .wren_a        ( sort_wren_a ),
-    .wren_b        ( sort_wren_b ),
-    .q_a           ( sort_q_a    ),
-    .q_b           ( sort_q_b    ),
-    .done_o        ( done        ),
-    .max_counter_i ( fullness    ),
-    .sorting_i     ( sorting     )
+    .address_a     ( sort_addr_a              ),
+    .address_b     ( sort_addr_b              ),
+    .clk_i         ( clk_i                    ),
+    .data_a        ( sort_data_a              ),
+    .data_b        ( sort_data_b              ),
+    .wren_a        ( sort_wren_a              ),
+    .wren_b        ( sort_wren_b              ),
+    .q_a           ( sort_q_a                 ),
+    .q_b           ( sort_q_b                 ),
+    .done_o        ( done                     ),
+    .max_counter_i ( counter_inside_ram_block ),
+    .sorting_i     ( sorting                  )
   );
 
   typedef enum logic [1:0] { IDLE_S,
@@ -101,9 +106,12 @@ module sorting #(
       case (state)
         IDLE_S: begin
           if ( snk_startofpacket_i && snk_valid_i )
-            next_state = RECIEVING_S;
-          else if ( snk_ready_o && src_startofpacket_o )
-            next_state = SENDING_S;
+            begin
+              if ( snk_endofpacket_i )
+                next_state = SENDING_S;
+              else
+                next_state = RECIEVING_S;
+            end
         end
 
         RECIEVING_S: begin
@@ -117,7 +125,7 @@ module sorting #(
         end
 
         SENDING_S: begin
-          if ( src_endofpacket_o )
+          if ( src_endofpacket_o && src_ready_i )
             next_state = IDLE_S;
         end
 
@@ -138,14 +146,16 @@ module sorting #(
       addr_b              = '0;
       data_a              = '0;
       data_b              = '0;
-      wren_b              = '0;
-      wren_a              = '0;
+      wren_b              = 1'b0;
+      wren_a              = 1'b0;
       sort_q_a            = '0;
       sort_q_b            = '0;
 
       case(state)
         IDLE_S: begin
           snk_ready_o = 1'b1;
+          wren_a      = snk_startofpacket_i ? 1'b1 : 1'b0;
+          data_a      = snk_data_i;
         end
 
         RECIEVING_S: begin
@@ -163,15 +173,16 @@ module sorting #(
           wren_a   = sort_wren_a;
           wren_b   = sort_wren_b;
           sort_q_a = q_a;
-          sort_q_b = q_a;
+          sort_q_b = q_b;
         end
 
         SENDING_S: begin
           addr_a              = send_addr_a;
+          addr_b              = send_addr_b;
           src_valid_o         = 1'b1;
-          src_data_o          = q_a;
-          src_startofpacket_o = send_addr_a == '0;
-          src_endofpacket_o   = send_addr_a == counter_inside_ram_block;
+          src_data_o          = data_to_send;
+          src_startofpacket_o = start_of_sending;
+          src_endofpacket_o   = end_of_sending;
         end
 
         default: begin
@@ -192,20 +203,44 @@ module sorting #(
       endcase
     end
 
+  // Address a and address b incremented by two one by one 
   always_ff @( posedge clk_i )
     begin
       if ( state != SENDING_S )
         send_addr_a <= '0;
-      else
-        send_addr_a <= send_addr_a + (ADDR_SZ)'(1);
+      else if ( src_ready_i && counter[1] )
+        send_addr_a <= send_addr_a + (ADDR_SZ)'(2);
     end
 
   always_ff @( posedge clk_i )
     begin
-      if ( state == IDLE_S || send_addr_a == counter_inside_ram_block )
+      if ( state != SENDING_S )
+        send_addr_b <= (ADDR_SZ)'(1);
+      else if ( src_ready_i && counter[0] )
+        send_addr_b <= send_addr_b + (ADDR_SZ)'(2);
+    end
+  
+  always_ff @( posedge clk_i )
+    begin
+      if ( state != SENDING_S )
+        counter <= 2'b10;
+      else if ( src_ready_i )
+        counter <= { counter[0], counter[1] };
+    end
+  
+  assign data_to_send     = counter[1] ? q_a : q_b;
+  assign start_of_sending = send_addr_a == '0 && send_addr_b == (ADDR_SZ)'(1);
+  assign end_of_sending   = send_addr_a == counter_inside_ram_block || send_addr_b == counter_inside_ram_block;
+
+  always_ff @( posedge clk_i )
+    begin
+      if ( snk_valid_i )
+        begin
+          if ( state == RECIEVING_S || state == IDLE_S && snk_startofpacket_i )
+            counter_inside_ram_block <= counter_inside_ram_block + (ADDR_SZ)'(1);
+        end
+      else if ( state == IDLE_S )
         counter_inside_ram_block <= '0;
-      else if ( state == RECIEVING_S && snk_valid_i )
-        counter_inside_ram_block <= counter_inside_ram_block + (ADDR_SZ)'(1);
     end
   
   always_ff @( posedge clk_i )
