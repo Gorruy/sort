@@ -16,7 +16,7 @@ module bubble_sort #(
 
   output logic                 done_o,
   input  logic                 sorting_i,
-  input  logic [ADDR_SZ - 1:0] max_counter_i
+  input  logic [ADDR_SZ:0]     max_counter_i
 );
 
   logic [1:0]           counter;
@@ -59,24 +59,13 @@ module bubble_sort #(
   always_ff @( posedge clk_i )
     begin
       if ( sorting_i )
-        max_addr <= max_counter_i - (ADDR_SZ)'(2);
+        max_addr <= (ADDR_SZ)'( max_counter_i - 2 );
       else if ( outer_counter == max_addr && counter == '1 )
-        max_addr <= max_addr - (ADDR_SZ)'(1);
+        max_addr <= (ADDR_SZ)'( max_addr - 1 );
     end
   
-  always_ff @( posedge clk_i )
-    begin
-      if ( counter == (ADDR_SZ)'(2) && !sorting_i )
-        begin
-          wren_b <= 1'b1;
-          wren_a <= 1'b1;
-        end
-      else 
-        begin
-          wren_b <= 1'b0;
-          wren_a <= 1'b0;
-        end
-    end
+  assign wren_a = counter == '1 && !sorting_i ? 1'b1 : 1'b0;
+  assign wren_b = counter == '1 && !sorting_i ? 1'b1 : 1'b0;
 
   // address buses hold same values for 2 clk cycles: reading on first and writing on second
   always_ff @( posedge clk_i )

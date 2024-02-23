@@ -22,10 +22,10 @@ module sorting #(
   localparam ADDR_SZ = $clog2(MAX_PKT_LEN);
 
   // Avalon internal signals
-  logic [ADDR_SZ - 1:0] counter_inside_ram_block;
+  logic [ADDR_SZ:0]     counter_inside_ram_block;
   logic                 sorting;
-  logic [ADDR_SZ - 1:0] send_addr_a;
-  logic [ADDR_SZ - 1:0] send_addr_b;
+  logic [ADDR_SZ:0]     send_addr_a;
+  logic [ADDR_SZ:0]     send_addr_b;
   logic [1:0]           counter;
   logic [DWIDTH - 1:0]  data_to_send;
   logic                 end_of_sending;
@@ -159,7 +159,7 @@ module sorting #(
         end
 
         RECIEVING_S: begin
-          addr_a      = counter_inside_ram_block;
+          addr_a      = (ADDR_SZ)'(counter_inside_ram_block);
           data_a      = snk_data_i;
           wren_a      = snk_valid_i;
           snk_ready_o = 1'b1;
@@ -177,8 +177,8 @@ module sorting #(
         end
 
         SENDING_S: begin
-          addr_a              = send_addr_a;
-          addr_b              = send_addr_b;
+          addr_a              = (ADDR_SZ)'(send_addr_a);
+          addr_b              = (ADDR_SZ)'(send_addr_b);
           src_valid_o         = 1'b1;
           src_data_o          = data_to_send;
           src_startofpacket_o = start_of_sending;
@@ -237,7 +237,7 @@ module sorting #(
       if ( snk_valid_i )
         begin
           if ( state == RECIEVING_S || state == IDLE_S && snk_startofpacket_i )
-            counter_inside_ram_block <= counter_inside_ram_block + (ADDR_SZ)'(1);
+            counter_inside_ram_block <= counter_inside_ram_block + (ADDR_SZ + 1)'(1);
         end
       else if ( state == IDLE_S || src_endofpacket_o && src_ready_i )
         counter_inside_ram_block <= '0;

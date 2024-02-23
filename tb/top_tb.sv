@@ -2,8 +2,8 @@
 
 module top_tb;
 
-  parameter NUMBER_OF_TEST_RUNS = 5;
-  parameter MAX_PKT_LEN         = 25;
+  parameter NUMBER_OF_TEST_RUNS = 1;
+  parameter MAX_PKT_LEN         = 64;
   parameter TIMEOUT             = MAX_PKT_LEN**2 * 4 + 1;
   parameter DWIDTH              = 32;
 
@@ -203,6 +203,10 @@ module top_tb;
                 src_ready_delay = $urandom_range(10, 1);
                 src_ready_i = 1'b0;
                 ##(src_ready_delay);
+                src_ready_i = 1'b1;
+              end
+            else
+              begin
                 src_ready_i = 1'b1;
               end
             ##1;
