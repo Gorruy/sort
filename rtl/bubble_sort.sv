@@ -66,7 +66,7 @@ module bubble_sort #(
   
   always_ff @( posedge clk_i )
     begin
-      if ( counter == (ADDR_SZ)'(2) )
+      if ( counter == (ADDR_SZ)'(2) && !sorting_i )
         begin
           wren_b <= 1'b1;
           wren_a <= 1'b1;

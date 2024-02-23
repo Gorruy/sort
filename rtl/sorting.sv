@@ -239,7 +239,7 @@ module sorting #(
           if ( state == RECIEVING_S || state == IDLE_S && snk_startofpacket_i )
             counter_inside_ram_block <= counter_inside_ram_block + (ADDR_SZ)'(1);
         end
-      else if ( state == IDLE_S )
+      else if ( state == IDLE_S || src_endofpacket_o && src_ready_i )
         counter_inside_ram_block <= '0;
     end
   

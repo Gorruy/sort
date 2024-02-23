@@ -2,7 +2,7 @@
 
 module top_tb;
 
-  parameter NUMBER_OF_TEST_RUNS = 1;
+  parameter NUMBER_OF_TEST_RUNS = 5;
   parameter MAX_PKT_LEN         = 25;
   parameter TIMEOUT             = MAX_PKT_LEN**2 * 4 + 1;
   parameter DWIDTH              = 32;
@@ -115,6 +115,7 @@ module top_tb;
       while ( generated_data.num() )
         begin
           ##1;
+          exposed_data = {};
           if ( snk_ready_o !== 1'b1 )
             begin
               continue;
@@ -128,7 +129,7 @@ module top_tb;
           snk_endofpacket   = gen_data.size() != 0 ? 1'b0 : 1'b1;
 
           exposed_data.push_back(snk_data);
-          ##2;
+          ##1;
           snk_startofpacket = 1'b0;
 
           while ( gen_data.size() > 1 )
@@ -180,9 +181,10 @@ module top_tb;
         if ( src_startofpacket === 1'b1 && src_endofpacket !== 1'b1 )
           begin
             do begin
+              ##1;
               if ( with_ready_delay )
                 begin
-                  src_ready_delay = $urandom_range(10, 0);
+                  src_ready_delay = $urandom_range(10, 1);
                   src_ready_i = 1'b0;
                   ##(src_ready_delay);
                   src_ready_i = 1'b1;
@@ -194,26 +196,38 @@ module top_tb;
                 begin
                   data.push_back(src_data);
                 end
-              ##1;
             end while ( src_endofpacket !== 1'b1 );
+
+            if ( with_ready_delay )
+              begin
+                src_ready_delay = $urandom_range(10, 1);
+                src_ready_i = 1'b0;
+                ##(src_ready_delay);
+                src_ready_i = 1'b1;
+              end
+            ##1;
             
-            data.push_back(src_data);
             output_data.put(data);
-            src_ready_i = 1'b0;
             timeout_counter = 0;
           end
         else if ( src_startofpacket === 1'b1 && src_endofpacket === 1'b1 )
           begin
             data = {};
             timeout_counter = 0;
+            src_ready_i = 1'b1;
             if ( src_valid )
               begin
                 data.push_back(src_data);
                 output_data.put(data);
               end
+            ##1;
           end
         else 
-          timeout_counter += 1;
+          begin
+            timeout_counter += 1;
+          end
+
+        src_ready_i = 1'b0;
       end
 
   endtask
@@ -258,7 +272,7 @@ module top_tb;
 
     fork
       send_data( generated_data, input_data );
-      read_data( output_data, 1 );
+      read_data( output_data, 0 );
     join
 
     compare_data( input_data, output_data ); 
