@@ -108,10 +108,12 @@ module top_tb;
   endtask
 
   task send_data( mailbox #( data_t ) generated_data,
-                  mailbox #( data_t ) input_data 
+                  mailbox #( data_t ) input_data,
+                  int                 with_delay 
                 );
     
       data_t exposed_data, gen_data;
+      int    delay;
 
       while ( generated_data.num() )
         begin
@@ -138,6 +140,12 @@ module top_tb;
               while ( !snk_ready_o )
                 begin
                   ##1;
+                end
+              if ( with_delay )
+                begin
+                  delay = $urandom_range( 10, 0 );
+                  snk_valid = 1'b0;
+                  ##(delay);
                 end
               snk_data          = gen_data.pop_back();
               snk_valid         = 1'b1;
@@ -285,14 +293,14 @@ module top_tb;
     wait( srst_done === 1'b1 );
 
     fork
-      send_data( generated_data[0], input_data );
+      send_data( generated_data[0], input_data, 0 );
       read_data( output_data, 0 );
     join
 
     compare_data( input_data, output_data ); 
 
     fork
-      send_data( generated_data[1], input_data );
+      send_data( generated_data[1], input_data, 1 );
       read_data( output_data, 1 );
     join
 
