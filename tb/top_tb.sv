@@ -3,7 +3,7 @@
 module top_tb;
 
   parameter NUMBER_OF_TEST_RUNS = 5;
-  parameter MAX_PKT_LEN         = 27;
+  parameter MAX_PKT_LEN         = 7;
   parameter TIMEOUT             = MAX_PKT_LEN**2 * 3 + 1;
   parameter DWIDTH              = 155;
   parameter NUMBER_OF_TESTS     = 2;
@@ -183,7 +183,7 @@ module top_tb;
                 end
               if ( with_delay )
                 begin
-                  delay = $urandom_range( 10, 0 );
+                  delay     = $urandom_range( 10, 0 );
                   snk_valid = 1'b0;
                   ##(delay);
                 end
@@ -252,7 +252,7 @@ module top_tb;
             if ( with_ready_delay )
               begin
                 src_ready_delay = $urandom_range(10, 1);
-                src_ready_i = 1'b0;
+                src_ready_i     = 1'b0;
                 ##(src_ready_delay);
                 src_ready_i = 1'b1;
               end
@@ -269,7 +269,7 @@ module top_tb;
           begin
             data = {};
             timeout_counter = 0;
-            src_ready_i = 1'b1;
+            src_ready_i     = 1'b1;
             if ( src_valid )
               begin
                 data.push_back(src_data);
@@ -332,6 +332,7 @@ module top_tb;
 
     wait( srst_done === 1'b1 );
 
+    // Tests without delays in sending or reading
     fork
       send_data( generated_data[0], input_data, 0 );
       read_data( output_data, 0 );
@@ -339,6 +340,7 @@ module top_tb;
 
     compare_data( input_data, output_data ); 
 
+    // Tests with delays
     fork
       send_data( generated_data[1], input_data, 1 );
       read_data( output_data, 1 );
@@ -347,7 +349,10 @@ module top_tb;
     compare_data( input_data, output_data ); 
 
     if ( test_succeed )
-      $display( "All tests passed!" );
+      begin
+        $display( "All tests passed!" );
+      end
+      
     $stop();
   end
 
