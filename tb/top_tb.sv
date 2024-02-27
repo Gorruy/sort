@@ -2,10 +2,10 @@
 
 module top_tb;
 
-  parameter NUMBER_OF_TEST_RUNS = 1;
-  parameter MAX_PKT_LEN         = 8;
-  parameter TIMEOUT             = MAX_PKT_LEN**2 * 4 + 1;
-  parameter DWIDTH              = 32;
+  parameter NUMBER_OF_TEST_RUNS = 5;
+  parameter MAX_PKT_LEN         = 27;
+  parameter TIMEOUT             = MAX_PKT_LEN**2 * 3 + 1;
+  parameter DWIDTH              = 155;
   parameter NUMBER_OF_TESTS     = 2;
 
   bit                  clk;
@@ -71,6 +71,7 @@ module top_tb;
 
     repeat ( NUMBER_OF_TEST_RUNS )
       begin
+        // Random data with random length
         data = {};
         len  = $urandom_range( MAX_PKT_LEN, 1 );
 
@@ -82,11 +83,13 @@ module top_tb;
         generated_data.put(data);
       end
     
+      // Packet of 1 length
       data = {};
       len  = 1;
       data.push_back( $urandom_range( 20, 0 ) );
       generated_data.put(data);
       
+      // Packet of max length
       data = {};
       len  = MAX_PKT_LEN;
       for ( int i = 0; i < len; i++ )
@@ -96,11 +99,48 @@ module top_tb;
 
       generated_data.put(data);
 
+      // Packet of max length, full of max values
       data = {};
       len  = MAX_PKT_LEN;
       for ( int i = 0; i < len; i++ )
         begin
           data.push_back( $urandom_range( 2**DWIDTH - 1, 2**DWIDTH - 1 ) );
+        end
+
+      generated_data.put(data);
+
+      // Packet of max length with sorted data
+      data = {};
+      len  = MAX_PKT_LEN;
+      for ( int i = 0; i < len; i++ )
+        begin
+          data.push_back( $urandom_range( 2**DWIDTH - 1, 0 ) );
+        end
+      
+      data.sort();
+      generated_data.put(data);
+
+      // Packet of max length with revesed sorted data
+      data = {};
+      len  = MAX_PKT_LEN;
+      for ( int i = 0; i < len; i++ )
+        begin
+          data.push_back( $urandom_range( 2**DWIDTH - 1, 0 ) );
+        end
+      
+      data.sort();
+      data.reverse();
+      generated_data.put(data);
+
+      // Packet of max length with two alternating values
+      data = {};
+      len  = MAX_PKT_LEN;
+      for ( int i = 0; i < len; i++ )
+        begin
+          if ( i % 2 == 0 )
+            data.push_back( DWIDTH );
+          else
+            data.push_back( DWIDTH >> 1);
         end
 
       generated_data.put(data);
