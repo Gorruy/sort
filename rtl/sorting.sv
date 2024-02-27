@@ -71,15 +71,15 @@ module sorting #(
     .DWIDTH        ( DWIDTH                   ), 
     .ADDR_SZ       ( ADDR_SZ                  )
   ) sort_inst0 (
-    .address_a     ( sort_addr_a              ),
-    .address_b     ( sort_addr_b              ),
+    .address_a_o   ( sort_addr_a              ),
+    .address_b_o   ( sort_addr_b              ),
     .clk_i         ( clk_i                    ),
-    .data_a        ( sort_data_a              ),
-    .data_b        ( sort_data_b              ),
-    .wren_a        ( sort_wren_a              ),
-    .wren_b        ( sort_wren_b              ),
-    .q_a           ( sort_q_a                 ),
-    .q_b           ( sort_q_b                 ),
+    .data_a_o      ( sort_data_a              ),
+    .data_b_o      ( sort_data_b              ),
+    .wren_a_o      ( sort_wren_a              ),
+    .wren_b_o      ( sort_wren_b              ),
+    .q_a_i         ( sort_q_a                 ),
+    .q_b_i         ( sort_q_b                 ),
     .done_o        ( done                     ),
     .max_counter_i ( counter_inside_ram_block ),
     .sorting_i     ( sorting                  )

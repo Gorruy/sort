@@ -4,20 +4,22 @@ module bubble_sort #(
 ) (
   input  logic                 clk_i,
 
-  output logic [ADDR_SZ - 1:0] address_a,
-  output logic [ADDR_SZ - 1:0] address_b,
-  output logic [DWIDTH - 1:0]  data_a,
-  output logic [DWIDTH - 1:0]  data_b,
-  output logic                 wren_a,
-  output logic                 wren_b,
+  output logic [ADDR_SZ - 1:0] address_a_o,
+  output logic [ADDR_SZ - 1:0] address_b_o,
+  output logic [DWIDTH - 1:0]  data_a_o,
+  output logic [DWIDTH - 1:0]  data_b_o,
+  output logic                 wren_a_o,
+  output logic                 wren_b_o,
 
-  input  logic [DWIDTH - 1:0]  q_a,
-  input  logic [DWIDTH - 1:0]  q_b,
+  input  logic [DWIDTH - 1:0]  q_a_i,
+  input  logic [DWIDTH - 1:0]  q_b_i,
 
   output logic                 done_o,
   input  logic                 sorting_i,
   input  logic [ADDR_SZ:0]     max_counter_i
 );
+
+  localparam DELAY = 3;
 
   logic [1:0]           counter;
   logic [ADDR_SZ - 1:0] max_addr;
@@ -28,16 +30,16 @@ module bubble_sort #(
 
   always_ff @( posedge clk_i )
     begin
-      data_buf_a <= q_a;
-      data_buf_b <= q_b;
+      data_buf_a <= q_a_i;
+      data_buf_b <= q_b_i;
     end
 
-  always_ff @( posedge clk_i )
-    compare <= (DWIDTH + 1)'(data_buf_a) - (DWIDTH + 1)'(data_buf_b);
+  always_comb
+    compare = (DWIDTH + 1)'(data_buf_a) - (DWIDTH + 1)'(data_buf_b);
 
   always_ff @( posedge clk_i )
     begin
-      if ( max_addr == '0 && counter == '1 )
+      if ( max_addr == '0 && counter == (2)'(DELAY - 1) )
         done_o <= 1'b1;
       else
         done_o <= 1'b0;
@@ -45,13 +47,13 @@ module bubble_sort #(
 
   always_comb
     begin
-      data_a = q_b;
-      data_b = q_a;
+      data_a_o = q_b_i;
+      data_b_o = q_a_i;
 
       if ( compare[DWIDTH] )
         begin
-          data_a = q_a;
-          data_b = q_b;
+          data_a_o = q_a_i;
+          data_b_o = q_b_i;
         end
     end
 
@@ -60,17 +62,17 @@ module bubble_sort #(
     begin
       if ( sorting_i )
         max_addr <= (ADDR_SZ)'( max_counter_i - 2 );
-      else if ( outer_counter == max_addr && counter == '1 )
+      else if ( outer_counter == max_addr && counter == (2)'(DELAY - 1) )
         max_addr <= (ADDR_SZ)'( max_addr - 1 );
     end
   
-  assign wren_a = counter == '1 && !sorting_i ? 1'b1 : 1'b0;
-  assign wren_b = counter == '1 && !sorting_i ? 1'b1 : 1'b0;
+  assign wren_a_o = counter == (2)'(DELAY - 1) && !sorting_i ? 1'b1 : 1'b0;
+  assign wren_b_o = counter == (2)'(DELAY - 1) && !sorting_i ? 1'b1 : 1'b0;
 
   // address buses hold same values for 4 clk cycles: reading on first three and writing on last
   always_ff @( posedge clk_i )
     begin
-      if ( sorting_i || counter == '1 )
+      if ( sorting_i || counter == (2)'(DELAY - 1) )
         counter <= 1'b0;
       else
         counter <= counter + 1'b1;
@@ -78,13 +80,13 @@ module bubble_sort #(
   
   always_ff @( posedge clk_i )
     begin
-      if ( sorting_i || outer_counter == max_addr && counter == '1 )
+      if ( sorting_i || outer_counter == max_addr && counter == (2)'(DELAY - 1) )
         outer_counter <= '0;
-      else if ( counter == '1 )
+      else if ( counter == (2)'(DELAY - 1) )
         outer_counter <= outer_counter + (ADDR_SZ)'(1);
     end
 
-  assign address_a = outer_counter;
-  assign address_b = outer_counter + (ADDR_SZ)'(1);
+  assign address_a_o = outer_counter;
+  assign address_b_o = outer_counter + (ADDR_SZ)'(1);
 
 endmodule
