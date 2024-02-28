@@ -19,24 +19,22 @@ module bubble_sort #(
   input  logic [ADDR_SZ:0]     max_counter_i
 );
 
-  localparam DELAY = 3;
+  localparam DELAY = 2;
 
   logic [1:0]           counter;
   logic [ADDR_SZ - 1:0] max_addr;
   logic [ADDR_SZ - 1:0] outer_counter;
-  logic [DWIDTH:0]      compare;
   logic [DWIDTH - 1:0]  data_buf_a;
   logic [DWIDTH - 1:0]  data_buf_b;
 
-  always_ff @( posedge clk_i )
-    begin
-      data_buf_a <= q_a_i;
-      data_buf_b <= q_b_i;
-    end
+  // always_ff @( posedge clk_i )
+  //   begin
+  //     data_buf_a <= q_a_i;
+  //     data_buf_b <= q_b_i;
+  //   end
 
   // If MSB of compare is 1: q_a less than q_b
-  always_comb
-    compare = (DWIDTH + 1)'(data_buf_a) - (DWIDTH + 1)'(data_buf_b);
+
 
   always_ff @( posedge clk_i )
     begin
@@ -51,7 +49,7 @@ module bubble_sort #(
       data_a_o = q_b_i;
       data_b_o = q_a_i;
 
-      if ( compare[DWIDTH] )
+      if ( q_a_i < q_b_i )
         begin
           data_a_o = q_a_i;
           data_b_o = q_b_i;
