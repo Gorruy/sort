@@ -34,6 +34,7 @@ module bubble_sort #(
       data_buf_b <= q_b_i;
     end
 
+  // If MSB of compare is 1: q_a less than q_b
   always_comb
     compare = (DWIDTH + 1)'(data_buf_a) - (DWIDTH + 1)'(data_buf_b);
 
@@ -66,6 +67,7 @@ module bubble_sort #(
         max_addr <= (ADDR_SZ)'( max_addr - 1 );
     end
   
+  // raise wren at last clk cycle of sorting cycle
   assign wren_a_o = counter == (2)'(DELAY - 1) && !sorting_i ? 1'b1 : 1'b0;
   assign wren_b_o = counter == (2)'(DELAY - 1) && !sorting_i ? 1'b1 : 1'b0;
 

@@ -140,7 +140,17 @@ module top_tb;
           if ( i % 2 == 0 )
             data.push_back( DWIDTH );
           else
-            data.push_back( DWIDTH >> 1);
+            data.push_back( DWIDTH >> 1 );
+        end
+
+      generated_data.put(data);
+
+      // Packet full of zeros
+      data = {};
+      len  = MAX_PKT_LEN;
+      for ( int i = 0; i < len; i++ )
+        begin
+          data.push_back( '0 );
         end
 
       generated_data.put(data);
@@ -194,6 +204,7 @@ module top_tb;
               ##1;
             end
 
+          // in the case of 1-length packet arrival
           if ( gen_data.size() == 0 )
             begin
               input_data.put(exposed_data);
